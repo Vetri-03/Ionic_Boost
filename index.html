@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ionic Boost UI</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      background: linear-gradient(135deg, #74ebd5, #ACB6E5);
+    }
+    .container {
+      max-width: 480px;
+      margin: 30px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    }
+    h2 {
+      text-align: center;
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+    p {
+      text-align: center;
+      color: #555;
+      font-size: 18px;
+      margin: 10px;
+    }
+    table {
+      margin: 20px auto;
+    }
+    button {
+      width: 60px;
+      height: 60px;
+      font-size: 22px;
+      border-radius: 10px;
+      background: #3498db;
+      color: white;
+      border: none;
+      box-shadow: 2px 2px 8px rgba(0,0,0,0.2);
+      transition: 0.3s;
+    }
+    button:hover {
+      background: #2980b9;
+    }
+    .input-box {
+      text-align: center;
+      font-size: 22px;
+      letter-spacing: 10px;
+      font-weight: bold;
+      color: #2c3e50;
+      background: #ecf0f1;
+      padding: 10px 20px;
+      border-radius: 8px;
+      margin: 10px auto;
+      width: fit-content;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2 id="title">IONIC BOOST</h2>
+
+    <div id="welcomeScreen">
+      <p>Press '5' to Torch</p>
+      <p>Press '*' to Start</p>
+      <p>Press 'B' to edit Mobile number</p>
+      <p>Press '9' to Off</p>
+    </div>
+
+    <div id="passwordScreen" style="display: none;">
+      <p>Enter Password</p>
+      <p>Press '#' to submit</p>
+    </div>
+
+    <div class="input-box" id="inputBox">____</div>
+
+    <div id="editMenu" style="display: none;">
+      <p>1. Edit Mobile</p>
+      <p>2. Edit Password</p>
+      <p>* to Welcome Menu</p>
+    </div>
+
+    <div id="editMobileScreen" style="display: none;">
+      <p>Press 1 to edit Mobile 2 (Current: <span id="mobile2"></span>)</p>
+      <p>Press 2 to edit Mobile 3 (Current: <span id="mobile3"></span>)</p>
+      <p>* to return</p>
+    </div>
+
+    <div id="editPasswordScreen" style="display: none;">
+      <p>Press 1 to edit Admin Password</p>
+      <p>Press 2 to edit Dosing Password</p>
+      <p>* to return</p>
+    </div>
+
+    <div id="primingScreen" style="display: none;">
+       <h2>Priming Started</h2>
+        <p style="text-align:center;">Time Remaining</p>
+        <p id="countdown" style="text-align:center; font-size: 28px; font-weight: bold;">10:00</p>
+    </div>
+
+    <div id="readyMenuScreen" style="display: none;">
+        <h2>Ready Menu</h2>
+        <p>D - Dosing | # - Back</p>
+        <p>A - Edit Diesel | B - Set Prime</p>
+        <p>Diesel: <span id="dieselQty">0020</span> | Time: <span id="primeTime">10s</span></p>
+    </div>
+
+    <div id="dieselEntryScreen" style="display: none;">
+        <h2>Diesel Quantity</h2>
+        <p>Enter Diesel Quantity</p>
+        <p>Press '#' to Submit | '*' to Cancel</p>
+        <div class="input-box" id="dieselInputBox">____</div>
+    </div>
+
+    <div id="editPriming" style="display: none;">
+        <h2>Set Priming Time</h2>
+        <p>Enter Priming Time in Seconds</p>
+        <p>Press '#' to Submit | '*' to Cancel</p>
+        <div class="input-box" id="primingInputBox">_</div>
+    </div>
+    <div id="dosingScreen" class="screen">
+        <div class="title">Dosing in Progress</div>
+        <div class="subtext">Remaining Time: <span id="dosingTimer">10s</span></div>
+    </div>
+
+
+
+    <div id="editingScreen" style="display: none;">
+      <p id="editingLabel">Editing...</p>
+      <p>Enter new value</p>
+      <p>Press '#' to submit</p>
+      <p>* to cancel</p>
+    </div>
+
+    <table id="keypad"></table>
+  </div>
+
+<script>
+  const keys = [
+    ["1", "2", "3", "A"],
+    ["4", "5", "6", "B"],
+    ["7", "8", "9", "C"],
+    ["*", "0", "#", "D"]
+  ];
+
+  const table = document.getElementById("keypad");
+  const inputBox = document.getElementById("inputBox");
+
+  const screens = {
+    welcome: document.getElementById("welcomeScreen"),
+    password: document.getElementById("passwordScreen"),
+    editMenu: document.getElementById("editMenu"),
+    editMobile: document.getElementById("editMobileScreen"),
+    editPassword: document.getElementById("editPasswordScreen"),
+    editing: document.getElementById("editingScreen"),
+    readyMenu: document.getElementById("readyMenuScreen"),
+    priming: document.getElementById("primingScreen"),
+    dieselEntry: document.getElementById("dieselEntryScreen"),
+    editPriming: document.getElementById("editPriming"),
+    dosing: document.getElementById("dosingScreen")
+  };
+
+  let adminPassword = "1234";
+  let dosingPassword = "1234";
+  let mobile2 = "9999999992";
+  let mobile3 = "9999999993";
+
+  let stage = "welcome";
+  let input = "";
+  let currentEditTarget = "";
+  let primingSeconds = 600;
+  let primingTimer = null;
+  let dieselQty = "0020";
+  let primeTime = "10s";
+  let passwordPurpose = "";
+  let dieselQuantity = "";
+  let currentInput = "";
+  let dosingInterval = null;
+  let remainingTime = 0;
+
+  function updateInputBox() {
+    inputBox.innerText = input.padEnd(4, "_");
+  }
+
+  function updateDieselInputBox() {
+    document.getElementById("dieselInputBox").innerText = dieselQuantity.padEnd(4, "_");
+  }
+
+  function updatePrimingInputBox() {
+    document.getElementById("primingInputBox").textContent = currentInput.padEnd(3, "_");
+  }
+
+  function updateDosingTimerDisplay() {
+    document.getElementById("dosingTimer").innerText = `${remainingTime}s`;
+  }
+
+  function showScreen(name) {
+    Object.keys(screens).forEach(key => {
+      screens[key].style.display = (key === name) ? "block" : "none";
+    });
+    inputBox.style.display = (name === "password" || name === "editing") ? "block" : "none";
+    document.getElementById("dieselInputBox").style.display = (name === "dieselEntry") ? "block" : "none";
+    document.getElementById("primingInputBox").style.display = (name === "editPriming") ? "block" : "none";
+
+    document.getElementById("mobile2").textContent = mobile2;
+    document.getElementById("mobile3").textContent = mobile3;
+  }
+
+  function formatTime(seconds) {
+    const mins = String(Math.floor(seconds / 60)).padStart(2, '0');
+    const secs = String(seconds % 60).padStart(2, '0');
+    return `${mins}:${secs}`;
+  }
+
+  function showReadyMenu() {
+    document.getElementById("dieselQty").innerText = dieselQty;
+    document.getElementById("primeTime").innerText = primeTime;
+    showScreen("readyMenu");
+  }
+
+  function startPriming() {
+    showScreen("priming");
+    document.getElementById("countdown").innerText = formatTime(primingSeconds);
+    if (primingTimer) clearInterval(primingTimer);
+    primingTimer = setInterval(() => {
+      if (primingSeconds > 0) {
+        primingSeconds--;
+        document.getElementById("countdown").innerText = formatTime(primingSeconds);
+      } else {
+        clearInterval(primingTimer);
+        stage = "readyMenu";
+        showReadyMenu();
+      }
+    }, 1000);
+  }
+
+  function startDosing() {
+    stage = "dosing";
+    remainingTime = parseInt(primeTime); // Seconds only
+    updateDosingTimerDisplay();
+    showScreen("dosing");
+    if (dosingInterval) clearInterval(dosingInterval);
+    dosingInterval = setInterval(() => {
+      if (remainingTime > 0) {
+        remainingTime--;
+        updateDosingTimerDisplay();
+      } else {
+        clearInterval(dosingInterval);
+        stage = "readyMenu";
+        showReadyMenu();
+      }
+    }, 1000);
+  }
+
+  function handleKeyPress(key) {
+    if ((stage === "priming" || stage === "readyMenu") && key === "*") {
+      if (primingTimer) clearInterval(primingTimer);
+      stage = "welcome";
+      showScreen("welcome");
+      return;
+    }
+
+    if (stage === "welcome") {
+      if (key === "B") {
+        passwordPurpose = "admin";
+        stage = "password";
+        input = "";
+        showScreen("password");
+        updateInputBox();
+      } else if (key === "*") {
+        passwordPurpose = "dosing";
+        stage = "password";
+        input = "";
+        showScreen("password");
+        updateInputBox();
+      }
+      return;
+    }
+
+    if (stage === "password") {
+      if (key === "C") {
+        input = "";
+        updateInputBox();
+        return;
+      }
+      if (key === "*") {
+        input = "";
+        updateInputBox();
+        stage = "welcome";
+        showScreen("welcome");
+        return;
+      }
+      if (key === "#") {
+        if (passwordPurpose === "admin" && input === adminPassword) {
+          stage = "editMenu";
+          showScreen("editMenu");
+        } else if (passwordPurpose === "dosing" && input === dosingPassword) {
+          stage = "priming";
+          input = "";
+          primingSeconds = parseInt(primeTime) || 600;
+          updateInputBox();
+          startPriming();
+        } else {
+          alert("Wrong password!");
+        }
+        input = "";
+        updateInputBox();
+        return;
+      }
+      if (input.length < 16 && /^[0-9A-D]$/.test(key)) {
+        input += key;
+        updateInputBox();
+      }
+      return;
+    }
+
+    if (stage === "priming") {
+      if (key === "5") {
+        primingSeconds = Math.max(primingSeconds - 120, 0);
+        document.getElementById("countdown").innerText = formatTime(primingSeconds);
+      }
+      return;
+    }
+
+    if (stage === "dosing") {
+      if (key === "5") {
+        remainingTime = Math.max(remainingTime - 120, 0);
+        updateDosingTimerDisplay();
+      }
+      return;
+    }
+
+    if (stage === "editMenu") {
+      if (key === "1") {
+        stage = "editMobile";
+        showScreen("editMobile");
+      } else if (key === "2") {
+        stage = "editPassword";
+        showScreen("editPassword");
+      } else if (key === "*") {
+        stage = "welcome";
+        showScreen("welcome");
+      }
+      return;
+    }
+
+    if (stage === "editMobile") {
+      if (key === "1") {
+        currentEditTarget = "mobile2";
+        stage = "editing";
+        input = "";
+        document.getElementById("editingLabel").innerText = "Editing Mobile Number 2";
+        showScreen("editing");
+        updateInputBox();
+      } else if (key === "2") {
+        currentEditTarget = "mobile3";
+        stage = "editing";
+        input = "";
+        document.getElementById("editingLabel").innerText = "Editing Mobile Number 3";
+        showScreen("editing");
+        updateInputBox();
+      } else if (key === "*") {
+        stage = "editMenu";
+        showScreen("editMenu");
+      }
+      return;
+    }
+
+    if (stage === "editPassword") {
+      if (key === "1") {
+        currentEditTarget = "adminPassword";
+        stage = "editing";
+        input = "";
+        document.getElementById("editingLabel").innerText = "Editing Admin Password";
+        showScreen("editing");
+        updateInputBox();
+      } else if (key === "2") {
+        currentEditTarget = "dosingPassword";
+        stage = "editing";
+        input = "";
+        document.getElementById("editingLabel").innerText = "Editing Dosing Password";
+        showScreen("editing");
+        updateInputBox();
+      } else if (key === "*") {
+        stage = "editMenu";
+        showScreen("editMenu");
+      }
+      return;
+    }
+
+    if (stage === "readyMenu") {
+      if (key === "*") {
+        stage = "welcome";
+        showScreen("welcome");
+      } else if (key === "D") {
+        startDosing();
+      } else if (key === "A") {
+        stage = "editDiesel";
+        dieselQuantity = "";
+        updateDieselInputBox();
+        showScreen("dieselEntry");
+      } else if (key === "B") {
+        stage = "editPriming";
+        currentInput = "";
+        updatePrimingInputBox();
+        showScreen("editPriming");
+      }
+      return;
+    }
+
+    if (stage === "editDiesel") {
+      if (key >= "0" && key <= "9") {
+        if (dieselQuantity.length < 4) {
+          dieselQuantity += key;
+          updateDieselInputBox();
+        }
+      } else if (key === "#") {
+        dieselQty = dieselQuantity.padStart(4, "0");
+        stage = "readyMenu";
+        showReadyMenu();
+      } else if (key === "*") {
+        stage = "readyMenu";
+        showReadyMenu();
+      }
+      return;
+    }
+
+    if (stage === "editPriming") {
+      if (key >= "0" && key <= "9") {
+        if (currentInput.length < 3) {
+          currentInput += key;
+          updatePrimingInputBox();
+        }
+      } else if (key === "#") {
+        if (currentInput) {
+          primeTime = currentInput + "s";
+          primingSeconds = parseInt(currentInput);
+        }
+        stage = "readyMenu";
+        showReadyMenu();
+      } else if (key === "*") {
+        stage = "readyMenu";
+        showReadyMenu();
+      }
+      return;
+    }
+
+    if (stage === "editing") {
+      if (key === "*") {
+        input = "";
+        updateInputBox();
+        stage = (["mobile2", "mobile3"].includes(currentEditTarget)) ? "editMobile" : "editPassword";
+        showScreen(stage);
+        return;
+      }
+      if (key === "#") {
+        if (input.length > 0) {
+          if (currentEditTarget === "mobile2") mobile2 = input;
+          else if (currentEditTarget === "mobile3") mobile3 = input;
+          else if (currentEditTarget === "adminPassword") adminPassword = input;
+          else if (currentEditTarget === "dosingPassword") dosingPassword = input;
+          alert("Updated successfully!");
+        }
+        input = "";
+        updateInputBox();
+        stage = (["mobile2", "mobile3"].includes(currentEditTarget)) ? "editMobile" : "editPassword";
+        showScreen(stage);
+        return;
+      }
+      if (input.length < 16 && /^[0-9A-D*]$/.test(key)) {
+        input += key;
+        updateInputBox();
+      }
+      return;
+    }
+  }
+
+  // Generate keypad
+  keys.forEach(row => {
+    const tr = document.createElement("tr");
+    row.forEach(key => {
+      const td = document.createElement("td");
+      const btn = document.createElement("button");
+      btn.textContent = key;
+      btn.onclick = () => handleKeyPress(key);
+      td.appendChild(btn);
+      tr.appendChild(td);
+    });
+    table.appendChild(tr);
+  });
+
+  updateInputBox();
+  showScreen("welcome");
+</script>
+
